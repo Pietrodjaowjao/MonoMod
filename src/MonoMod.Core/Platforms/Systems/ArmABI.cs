@@ -12,5 +12,46 @@ namespace MonoMod.Core.Platforms.Systems
             // TODO: Do this properly.
             return TypeClassification.InRegister;
         }
+
+        public static TypeClassification ClassifyArm32(Type type, bool isReturn)
+        {
+            if (type.IsByRef || type.IsPointer)
+            {
+                return TypeClassification.ByReference;
+            }
+
+            if (type.IsPrimitive || type.IsEnum)
+            {
+                return TypeClassification.InRegister;
+            }
+
+            if (type.IsValueType)
+            {
+                var size = GetArmCompatibleTypeSize(type);
+
+                // On ARM32, small structs (< 4 or 8 bytes) may be returned in registers
+                if (isReturn)
+                {
+                    return size <= 8 ? TypeClassification.InRegister : TypeClassification.ByReference;
+                }
+
+                // For parameters: pass large structs by reference, small ones by value
+                return size <= 8 ? TypeClassification.InRegister : TypeClassification.ByReference;
+            }
+
+            return TypeClassification.ByReference;
+        }
+
+        public static int GetArmCompatibleTypeSize(Type type)
+        {
+            return type switch
+            {
+                _ when type == typeof(int) => 4,
+                _ when type == typeof(float) => 4,
+                _ when type == typeof(double) => 8,
+                _ when type == typeof(IntPtr) => IntPtr.Size,
+                _ => throw new NotSupportedException($"Can't determine size of {type} without runtime marshalling.")
+            };
+        }
     }
 }

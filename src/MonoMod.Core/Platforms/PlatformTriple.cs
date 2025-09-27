@@ -64,11 +64,19 @@ namespace MonoMod.Core.Platforms
         public static IArchitecture CreateCurrentArchitecture(ISystem system)
         {
             Helpers.ThrowIfArgumentNull(system);
-            return PlatformDetection.Architecture switch
+
+            var architeture = PlatformDetection.Architecture;
+
+            if (architeture == ArchitectureKind.Unknown)
+            {
+                architeture = ArchitectureKind.Arm;
+            }
+
+            return architeture switch
             {
                 ArchitectureKind.x86 => new Architectures.x86Arch(system),
                 ArchitectureKind.x86_64 => new Architectures.x86_64Arch(system),
-                ArchitectureKind.Arm => throw new NotImplementedException(),
+                ArchitectureKind.Arm => new Architectures.Arm32Arch(system),
                 ArchitectureKind.Arm64 => new Architectures.Arm64Arch(system),
                 var kind => throw new PlatformNotSupportedException($"Architecture kind {kind} not supported"),
             };

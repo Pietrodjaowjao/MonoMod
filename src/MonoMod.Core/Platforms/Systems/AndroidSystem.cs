@@ -40,7 +40,14 @@ namespace MonoMod.Core.Platforms.Systems
             PageSize = (nint)Unix.Sysconf(Unix.SysconfName.PageSize);
             allocator = new MmapPagedMemoryAllocator(PageSize);
 
-            if (PlatformDetection.Architecture == ArchitectureKind.x86_64)
+            var architeture = PlatformDetection.Architecture;
+
+            if (architeture == ArchitectureKind.Unknown)
+            {
+                architeture = ArchitectureKind.Arm;
+            }
+
+            if (architeture == ArchitectureKind.x86_64)
             {
                 defaultAbi = new Abi(
                     new[] { SpecialArgumentKind.ReturnBuffer, SpecialArgumentKind.ThisPointer, SpecialArgumentKind.UserArguments },
@@ -48,7 +55,7 @@ namespace MonoMod.Core.Platforms.Systems
                     true
                 );
             }
-            else if (PlatformDetection.Architecture == ArchitectureKind.Arm64)
+            else if (architeture == ArchitectureKind.Arm64)
             {
                 defaultAbi = new Abi(
                     new[] { SpecialArgumentKind.ThisPointer, SpecialArgumentKind.UserArguments },
@@ -56,9 +63,58 @@ namespace MonoMod.Core.Platforms.Systems
                     true
                 );
             }
+            else if (architeture == ArchitectureKind.Arm)
+            {
+                defaultAbi = new Abi(
+                    new[] { SpecialArgumentKind.ReturnBuffer, SpecialArgumentKind.ThisPointer, SpecialArgumentKind.UserArguments },
+                    ArmABI.ClassifyArm32,
+                    true
+                );
+            }
             else
             {
-                throw new NotImplementedException();
+                throw new NotImplementedException(
+                    $"Unsupported platform architecture '{architeture}' in AndroidSystem. " +
+                    $"Only x86_64 and Arm64 are currently implemented. Please add ABI support for this architecture.");
+            }
+        }
+
+        // Custom ArchitectureKind
+        public AndroidSystem(ArchitectureKind architeture)
+        {
+            PageSize = (nint)Unix.Sysconf(Unix.SysconfName.PageSize);
+            allocator = new MmapPagedMemoryAllocator(PageSize);
+
+            if (architeture == ArchitectureKind.x86_64)
+            {
+                defaultAbi = new Abi(
+                    new[] { SpecialArgumentKind.ReturnBuffer, SpecialArgumentKind.ThisPointer, SpecialArgumentKind.UserArguments },
+                    SystemVABI.ClassifyAMD64,
+                    true
+                );
+            }
+            else if (architeture == ArchitectureKind.Arm64)
+            {
+                defaultAbi = new Abi(
+                    new[] { SpecialArgumentKind.ThisPointer, SpecialArgumentKind.UserArguments },
+                    ArmABI.ClassifyArm64,
+                    true
+                );
+            }
+            else if (architeture == ArchitectureKind.Arm)
+            {
+                defaultAbi = new Abi(
+                    new[] { SpecialArgumentKind.ReturnBuffer, SpecialArgumentKind.ThisPointer, SpecialArgumentKind.UserArguments },
+                    ArmABI.ClassifyArm32,
+                    true
+                );
+            }
+            else
+            {
+                var detectedPlatform = PlatformDetection.Architecture.ToString();
+                throw new NotImplementedException(
+                    $"Unsupported platform architecture '{detectedPlatform}' in AndroidSystem. " +
+                    $"Only x86_64 and Arm64 are currently implemented. Please add ABI support for this architecture.");
             }
         }
 
